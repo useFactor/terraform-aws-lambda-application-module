@@ -28,6 +28,6 @@ output "lambda_function_global_env_vars" {
 }
 
 output "service_catalog_application_tag" {
-  description = "The application tag for service catalog Applications"
-  value       = aws_servicecatalogappregistry_application.this.application_tag
+  description = "The application tag for service catalog Applications. Null when create_service_catalog_application is false."
+  value       = one(aws_servicecatalogappregistry_application.this[*].application_tag)
 }

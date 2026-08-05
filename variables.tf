@@ -201,3 +201,9 @@ variable "tracking_config" {
     error_message = "The tracking_config must be either 'PassThrough' or 'Active'"
   }
 }
+
+variable "create_service_catalog_application" {
+  type        = bool
+  description = "Creates a Service Catalog AppRegistry application and tags every resource in this module with its awsApplication tag. Set to false in accounts that cannot access AppRegistry, which entered AWS maintenance mode on 2026-07-30; the awsApplication tag is then omitted and all other tagging is unaffected."
+  default     = true
+}

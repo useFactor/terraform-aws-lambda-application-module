@@ -225,13 +225,46 @@ run "service_catalog_application_registration" {
   command = plan
 
   assert {
-    condition     = aws_servicecatalogappregistry_application.this.name == "test-lambda-app"
+    condition     = length(aws_servicecatalogappregistry_application.this) == 1
+    error_message = "Service catalog application should be created by default"
+  }
+
+  assert {
+    condition     = aws_servicecatalogappregistry_application.this[0].name == "test-lambda-app"
     error_message = "Service catalog application should have correct name"
   }
 
   assert {
-    condition     = aws_servicecatalogappregistry_application.this.description == "test-lambda-app Lambda Application"
+    condition     = aws_servicecatalogappregistry_application.this[0].description == "test-lambda-app Lambda Application"
     error_message = "Service catalog application should have correct description"
+  }
+
+  assert {
+    condition     = contains(keys(local.tags), "awsApplication")
+    error_message = "Resources should carry the awsApplication tag when the application is created"
+  }
+}
+
+run "service_catalog_application_disabled" {
+  command = plan
+
+  variables {
+    create_service_catalog_application = false
+  }
+
+  assert {
+    condition     = length(aws_servicecatalogappregistry_application.this) == 0
+    error_message = "Service catalog application should not be created when disabled"
+  }
+
+  assert {
+    condition     = !contains(keys(local.tags), "awsApplication")
+    error_message = "awsApplication tag should be omitted when the application is disabled, not synthesized"
+  }
+
+  assert {
+    condition     = jsonencode(local.tags) == jsonencode(var.tags)
+    error_message = "Disabling the application should leave all other tagging untouched"
   }
 }
 

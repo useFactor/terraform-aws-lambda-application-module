@@ -50,16 +50,25 @@ locals {
     var.application_env_vars
   )
 
+  service_catalog_application_count = var.create_service_catalog_application ? 1 : 0
+
   tags = merge(
-    { "awsApplication" : aws_servicecatalogappregistry_application.this.application_tag.awsApplication },
+    var.create_service_catalog_application ? { "awsApplication" : aws_servicecatalogappregistry_application.this[0].application_tag.awsApplication } : {},
     var.tags
   )
 }
 
 resource "aws_servicecatalogappregistry_application" "this" {
+  count = local.service_catalog_application_count
+
   name        = var.application_name
   description = "${var.application_name} Lambda Application"
   tags        = var.tags
+}
+
+moved {
+  from = aws_servicecatalogappregistry_application.this
+  to   = aws_servicecatalogappregistry_application.this[0]
 }
 
 resource "aws_lambda_function" "lambda_application" {
