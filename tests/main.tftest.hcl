@@ -19,7 +19,7 @@ variables {
       handler           = "worker/index.handler"
       enable_vpc        = true
       description       = "Background worker function"
-      function_memory   = "512"
+      function_memory   = 512
       function_timeout  = 60
       s3_key            = "worker.zip"
       enable_snap_start = true
@@ -115,7 +115,7 @@ run "lambda_function_container_image_package_type" {
         handler           = "worker/index.handler"
         enable_vpc        = true
         description       = "Background worker function"
-        function_memory   = "512"
+        function_memory   = 512
         function_timeout  = 60
       }
     }
@@ -184,6 +184,35 @@ assert {
   assert {
     condition     = aws_lambda_function.lambda_application["worker"].s3_key == "worker.zip"
     error_message = "Worker function should use custom S3 key"
+  }
+}
+
+run "application_memory_and_timeout_reach_functions_that_do_not_override_them" {
+  variables {
+    application_memory  = 1024
+    application_timeout = 45
+  }
+
+  command = plan
+
+  assert {
+    condition     = aws_lambda_function.lambda_application["api"].memory_size == 1024
+    error_message = "A function declaring no memory should take application_memory"
+  }
+
+  assert {
+    condition     = aws_lambda_function.lambda_application["api"].timeout == 45
+    error_message = "A function declaring no timeout should take application_timeout"
+  }
+
+  assert {
+    condition     = aws_lambda_function.lambda_application["worker"].memory_size == 512
+    error_message = "A function declaring its own memory should keep it"
+  }
+
+  assert {
+    condition     = aws_lambda_function.lambda_application["worker"].timeout == 60
+    error_message = "A function declaring its own timeout should keep it"
   }
 }
 

@@ -5,7 +5,7 @@ variable "application_name" {
 
 variable "application_runtime" {
   type        = string
-  description = "Lambda runtime for the application, only required for Zip package type."
+  description = "Lambda runtime for functions that declare no runtime of their own. Required whenever a function resolves to the Zip package type."
   default     = ""
 }
 
@@ -16,7 +16,7 @@ variable "application_version" {
 
 variable "application_package_type" {
   type        = string
-  description = "The package Type of the Lambda Application, either `Zip` or `Image`. Defaults to `Zip`"
+  description = "The package type for functions that declare no package_type of their own, either `Zip` or `Image`. Defaults to `Zip`"
   default     = "Zip"
   validation {
     condition     = contains(["Zip", "Image"], var.application_package_type)
@@ -29,7 +29,7 @@ variable "lambda_functions_config" {
     description           = optional(string)
     handler               = string
     enable_vpc            = bool
-    function_memory       = optional(string)
+    function_memory       = optional(number)
     function_timeout      = optional(number)
     log_format            = optional(string, "JSON")
     application_log_level = optional(string)
@@ -38,8 +38,29 @@ variable "lambda_functions_config" {
     enable_snap_start     = optional(bool, false)
 
     function_concurrency_limit = optional(number)
+
+    package_type = optional(string)
+    runtime      = optional(string)
+    layers       = optional(list(string))
   }))
-  description = "Map of functions and associated configurations."
+  description = <<-EOT
+    Map of functions and associated configurations.
+
+    `package_type`, `runtime` and `layers` are resolved per function and fall back to
+    the application-wide `application_package_type`, `application_runtime` and layer
+    list when unset, so a function declares only what differs from the application.
+
+    `layers` replaces the application layer list rather than adding to it: a function
+    that declares layers declares the complete set, and an empty list means no layers.
+  EOT
+
+  validation {
+    condition = alltrue([
+      for function in values(var.lambda_functions_config) :
+      function.package_type == null || contains(["Zip", "Image"], coalesce(function.package_type, "Zip"))
+    ])
+    error_message = "Each lambda_functions_config package_type must be either `Zip` or `Image`."
+  }
 }
 
 variable "internal_entrypoint_config" {
@@ -104,13 +125,13 @@ variable "application_env_vars" {
 
 variable "application_memory" {
   type        = number
-  description = "Memory allocated to all functions in the application. Defaults to `128`."
+  description = "Memory allocated to functions that declare no function_memory of their own. Defaults to `128`."
   default     = 128
 }
 
 variable "application_timeout" {
   type        = number
-  description = "Timeout in seconds for all functions in the application. Defaults to `3`."
+  description = "Timeout in seconds for functions that declare no function_timeout of their own. Defaults to `3`."
   default     = 3
 }
 
@@ -182,7 +203,7 @@ variable "custom_policy_description" {
 
 variable "additional_layers" {
   type        = list(string)
-  description = "A list of layer ARN's (with or without aliases) to add to all functions within the Lambda application. Provides the ability to add dependencies for additional functionality such as monitoring and observability."
+  description = "A list of layer ARN's (with or without aliases) added to functions that declare no layers of their own. Provides the ability to add dependencies for additional functionality such as monitoring and observability."
   default     = []
 }
 

@@ -51,23 +51,18 @@ See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more informat
 
 | Name | Source | Version |
 |------|--------|---------|
-| lambda_datastore | github.com/hyprnz/terraform-aws-data-storage-module | v4.4.1 |
+| lambda_datastore | github.com/useFactor/terraform-aws-data-storage-module | v4.4.1 |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | application_name | Repo name of the lambda application. | `string` | n/a | yes |
-| application_runtime | Lambda runtime for the application, only required for Zip package type. | `string` | `""` | no |
 | application_version | The version of the zip package or container image tag to be deployed. | `string` | n/a | yes |
-| application_package_type | The package Type of the Lambda Application, either `Zip` or `Image`. Defaults to `Zip` | `string` | `"Zip"` | no |
-| artifact_bucket | Bucket that stores function artifacts. Includes layer dependencies. Required for zip-based deployment. | `string` | `""` | no |
-| artifact_bucket_key | File name key of the artifact to load. Required for zip-based deployment. | `string` | `""` | no |
-| container_image_uri | ECR image URI if using container based deployment. | `string` | `""` | no |
-| lambda_functions_config | Map of functions and associated configurations. | <pre>map(object({<br/>    description           = optional(string)<br/>    handler               = string<br/>    enable_vpc            = bool<br/>    function_memory       = optional(string)<br/>    function_timeout      = optional(number)<br/>    log_format            = optional(string, "JSON")<br/>    application_log_level = optional(string)<br/>    system_log_level      = optional(string)<br/>    s3_key                = optional(string)<br/>    enable_snap_start     = optional(bool, false)<br/><br/>    function_concurrency_limit = optional(number)<br/>  }))</pre> | n/a | yes |
-| additional_layers | A list of layer ARN's (with or without aliases) to add to all functions within the Lambda application. Provides the ability to add dependencies for additional functionality such as monitoring and observability. | `list(string)` | `[]` | no |
+| lambda_functions_config | Map of functions and associated configurations.<br/><br/>`package_type`, `runtime` and `layers` are resolved per function and fall back to<br/>the application-wide `application_package_type`, `application_runtime` and layer<br/>list when unset, so a function declares only what differs from the application.<br/><br/>`layers` replaces the application layer list rather than adding to it: a function<br/>that declares layers declares the complete set, and an empty list means no layers. | <pre>map(object({<br/>    description           = optional(string)<br/>    handler               = string<br/>    enable_vpc            = bool<br/>    function_memory       = optional(number)<br/>    function_timeout      = optional(number)<br/>    log_format            = optional(string, "JSON")<br/>    application_log_level = optional(string)<br/>    system_log_level      = optional(string)<br/>    s3_key                = optional(string)<br/>    enable_snap_start     = optional(bool, false)<br/><br/>    function_concurrency_limit = optional(number)<br/><br/>    package_type = optional(string)<br/>    runtime      = optional(string)<br/>    layers       = optional(list(string))<br/>  }))</pre> | n/a | yes |
+| additional_layers | A list of layer ARN's (with or without aliases) added to functions that declare no layers of their own. Provides the ability to add dependencies for additional functionality such as monitoring and observability. | `list(string)` | `[]` | no |
+| alb_ingress_config | Map of configuration options for lambda functions that can be triggered by an<br/>Application Load Balancer (ALB) external entrypoint.<br/>target_group_name: Name of the target group to use for the lambda function.<br/>target_group_path: Path to use for the lambda function. | <pre>map(object({<br/>    target_group_name = string<br/>    target_group_path = string<br/>  }))</pre> | `{}` | no |
 | alb_ingress_listener_arn | Listener ARN of ALB | `string` | `""` | no |
-| alb_ingress_config | Map of configuration options for lambda functions that can be triggered by an Application Load Balancer (ALB) external entrypoint. | <pre>map(object({<br/>    target_group_name = string<br/>    target_group_path = string<br/>  }))</pre> | `{}` | no |
 | alias_description | Name of the alias being created | `string` | `"Default alias"` | no |
 | alias_name | Name of the alias being created | `string` | `"live"` | no |
 | api_gateway_cors_configuration | Cross-origin resource sharing (CORS) configuration. | <pre>object({<br/>    allow_credentials = optional(bool, null)<br/>    allow_headers     = optional(set(string), null)<br/>    allow_methods     = optional(set(string), null)<br/>    allow_origins     = optional(set(string), null)<br/>    expose_headers    = optional(set(string), null)<br/>    max_age           = optional(number, null)<br/>  })</pre> | `{}` | no |
@@ -76,12 +71,18 @@ See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more informat
 | api_gateway_payload_format_version | Specifies the format of the payload sent to an integration. Required for HTTP APIs. | `string` | `"1.0"` | no |
 | api_gateway_route_config | The API Gateway route configuration. The keys should be the names of the Lambda functions that triggered by the API Gateway | <pre>map(object({<br/>    # https://docs.aws.amazon.com/apigateway/latest/developerguide/simple-calc-lambda-api.html<br/>    route          = optional(string, null)<br/>    operation_name = optional(string, null)<br/>    methods        = optional(set(string), ["ANY"])<br/>  }))</pre> | `{}` | no |
 | application_env_vars | Map of environment variables required by any function in the application. | `map(any)` | `{}` | no |
-| application_memory | Memory allocated to all functions in the application. Defaults to `128`. | `number` | `128` | no |
-| application_timeout | Timeout in seconds for all functions in the application. Defaults to `3`. | `number` | `3` | no |
+| application_memory | Memory allocated to functions that declare no function_memory of their own. Defaults to `128`. | `number` | `128` | no |
+| application_package_type | The package type for functions that declare no package_type of their own, either `Zip` or `Image`. Defaults to `Zip` | `string` | `"Zip"` | no |
+| application_runtime | Lambda runtime for functions that declare no runtime of their own. Required whenever a function resolves to the Zip package type. | `string` | `""` | no |
+| application_timeout | Timeout in seconds for functions that declare no function_timeout of their own. Defaults to `3`. | `number` | `3` | no |
+| artifact_bucket | Bucket that stores function artifacts and layer dependencies if using zip based deployment. | `string` | `""` | no |
+| artifact_bucket_key | File name key of the artifact to load if using zip based deployment. | `string` | `""` | no |
 | aws_cloudwatch_log_group_retention_in_days | The retention period in days of all log group created for each function. Defaults to `30`. | `number` | `30` | no |
+| container_image_uri | ECR image URI if using container based deployment. | `string` | `""` | no |
 | create_dynamodb_table | Whether or not to enable DynamoDB resources | `bool` | `false` | no |
 | create_rds_instance | Controls if an RDS instance should be provisioned. Will take precedence if this and `use_rds_snapshot` are both true. | `bool` | `false` | no |
 | create_s3_bucket | Controls if an S3 bucket should be provisioned | `bool` | `false` | no |
+| create_service_catalog_application | Creates a Service Catalog AppRegistry application and tags every resource in this module with its awsApplication tag. Set to false in accounts that cannot access AppRegistry, which entered AWS maintenance mode on 2026-07-30; the awsApplication tag is then omitted and all other tagging is unaffected. | `bool` | `true` | no |
 | custom_policy_description | Allows to override the custom Lambda policy's description | `string` | `""` | no |
 | custom_policy_document | A valid policy json string that defines additional actions required by the execution role of the Lambda function | `string` | `""` | no |
 | dynamodb_attributes | Additional DynamoDB attributes in the form of a list of mapped values | `list(any)` | `[]` | no |
@@ -109,13 +110,11 @@ See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more informat
 | dynamodb_ttl_enabled | Whether ttl is enabled or disabled | `bool` | `true` | no |
 | enable_api_gateway | Allow to create api-gateway | `bool` | `false` | no |
 | enable_datastore | Enables the data store module that will provision data storage resources | `bool` | `true` | no |
-| enable_load_balancer | Allow to create load balancer | `bool` | `false` | no |
 | event_bus_config | Map of external event bus names that Lambda functions need access to. Allowed keys are 'org_event_bus_name' and 'domain_event_bus_name'. Values should be the actual event bus names. This configuration creates IAM permissions for PutEvents action and sets corresponding environment variables (ORG_EVENT_BUS and DOMAIN_EVENT_BUS) in Lambda functions. | `map(string)` | `{}` | no |
-| external_entrypoint_config | Map of configurations of external entrypoints. | <pre>map(object({<br/>    name                = string<br/>    description         = optional(string, null)<br/>    event_pattern_json  = optional(map(any), null)<br/>    schedule_expression = optional(string, null)<br/>    event_bus_name      = string<br/>    source_account      = optional(string, null)<br/>  }))</pre> | `{}` | no |
+| external_entrypoint_config | Map of > 0 external entrypoint configuration triggers. | <pre>map(set(object({<br/>    name                = string<br/>    description         = optional(string, null)<br/>    event_pattern_json  = optional(string, "")<br/>    schedule_expression = optional(string, "")<br/>    event_bus_name      = string<br/>    source_account      = optional(string, null)<br/>  })))</pre> | `{}` | no |
 | iam_resource_path | The path for IAM roles and policies | `string` | `"/"` | no |
-| internal_entrypoint_config | Map of configurations of internal entrypoints. | <pre>map(object({<br/>    name                = string<br/>    description         = optional(string, null)<br/>    event_pattern_json  = optional(any, {})<br/>    schedule_expression = optional(string, "")<br/>  }))</pre> | `{}` | no |
-| lambda_alb_config | Contains entry point lambda function key | `map(string)` | `{}` | no |
-| layer_artifact_key | File name key of the layer artifact to load. | `string` | `""` | no |
+| internal_entrypoint_config | Map of > 0 internal entrypoint configuration triggers. | <pre>map(set(object({<br/>    name                = string<br/>    description         = optional(string, null)<br/>    event_pattern_json  = optional(string, "")<br/>    schedule_expression = optional(string, "")<br/>  })))</pre> | `{}` | no |
+| layer_artifact_key | File name key of the layer artifact to load if using zip based deployment for the Lambda layer. | `string` | `""` | no |
 | msk_arn | the MSK source arn for all lambda requires MSK | `string` | `""` | no |
 | msk_event_source_config | Map of configurations of MSK event source for each lambda | <pre>map(set(object({<br/>    event_source_arn         = optional(string, null)<br/>    topic                    = string<br/>    starting_position        = optional(string, "LATEST")<br/>    batch_size               = optional(number, null)<br/>    consumer_group_id_prefix = optional(string, "")<br/>    enabled                  = optional(bool, true)<br/>  })))</pre> | `{}` | no |
 | parameter_store_path | SSM parameter path | `string` | `""` | no |
@@ -151,11 +150,9 @@ See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more informat
 | rds_subnet_group | Subnet group for RDS instances | `string` | `""` | no |
 | rds_username | RDS database user name | `string` | `""` | no |
 | s3_bucket_name | The name of the bucket. It is recommended to add a namespace/suffix to the name to avoid naming collisions | `string` | `""` | no |
+| s3_cors_config | CORS configuration for the bucket | <pre>list(object({<br/>    allowed_headers = optional(list(string), null)<br/>    allowed_methods = optional(list(string), null)<br/>    allowed_origins = optional(list(string), null)<br/>    expose_headers  = optional(list(string), null)<br/>    max_age_seconds = optional(number, null)<br/>  }))</pre> | `[]` | no |
 | s3_enable_versioning | If versioning should be configured on the bucket | `bool` | `true` | no |
 | s3_send_bucket_notifications_to_eventbridge | Enable bucket notifications and emit to EventBridge | `bool` | `false` | no |
-| s3_cors_config | CORS configuration for the bucket | <pre>list(object({<br/>    allowed_headers = optional(list(string), null)<br/>    allowed_methods = optional(list(string), null)<br/>    allowed_origins = optional(list(string), null)<br/>    expose_headers  = optional(list(string), null)<br/>    max_age_seconds = optional(number, null)<br/>  }))</pre> | `[]` | no |
-| service_target_group_name | The service target group attached to application load balancer listener | `string` | `""` | no |
-| service_target_group_path | The target path attached to the service target group | `string` | `""` | no |
 | ssm_kms_key_arn | Either he customer managed KMS or AWS manages key arn used for encrypting `SecureSting` parameters | `string` | `""` | no |
 | tags | Additional tags that are added to all resources in this module. | `map(any)` | `{}` | no |
 | tracking_config | Sets the passing of sample and tracing of calls, possible values are `Passthrough`(default) or `Active` | `string` | `"PassThrough"` | no |
@@ -191,7 +188,7 @@ See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more informat
 | lambda_function_arns | ARNs of the Lambda functions |
 | lambda_function_global_env_vars | A map of environment variables configured for every function. Excludes function specific env vars |
 | lambda_function_names | Names of the Lambda functions |
-| service_catalog_application_tag | The application tag for service catalog Applications |
+| service_catalog_application_tag | The application tag for service catalog Applications. Null when create_service_catalog_application is false. |
 
 ---
 

@@ -1,6 +1,4 @@
 locals {
-  isZipPackage              = var.application_package_type == "Zip" ? true : false
-  isImagePackage            = var.application_package_type == "Image" ? true : false
   domain_name               = try(coalesce(var.api_gateway_custom_domain_name), null) // treat both "" and null as absent
   enable_custom_domain_name = local.domain_name == null ? false : true
   rds_env_vars = {
@@ -37,10 +35,43 @@ locals {
 
   app_layer_required = length(var.layer_artifact_key) > 0 ? true : false
   app_layer_count    = local.app_layer_required ? 1 : 0
-  layers = concat(
+
+  application_runtime   = var.application_runtime != "" ? var.application_runtime : null
+  application_s3_key    = var.artifact_bucket_key != "" ? var.artifact_bucket_key : null
+  application_image_uri = var.container_image_uri != "" ? "${var.container_image_uri}:${var.application_version}" : null
+
+  application_layers = concat(
     local.app_layer_required ? [aws_lambda_layer_version.runtime_dependencies[0].arn] : [],
     var.additional_layers
   )
+
+  function_package_type = {
+    for function_key, function in var.lambda_functions_config :
+    function_key => coalesce(function.package_type, var.application_package_type)
+  }
+
+  function_config = {
+    for function_key, function in var.lambda_functions_config :
+    function_key => {
+      name         = format("%s-%s", var.application_name, function_key)
+      package_type = local.function_package_type[function_key]
+      is_zip       = local.function_package_type[function_key] == "Zip"
+      is_image     = local.function_package_type[function_key] == "Image"
+
+      runtime = function.runtime != null && function.runtime != "" ? function.runtime : local.application_runtime
+      s3_key  = function.s3_key != null && function.s3_key != "" ? function.s3_key : local.application_s3_key
+
+      // A function that declares layers declares the complete set: an explicit list
+      // replaces the application list rather than adding to it, and an explicit empty
+      // list means no layers. This keeps a layer built for one runtime or architecture
+      // off a function that is neither.
+      layers = function.layers != null ? function.layers : local.application_layers
+
+      memory      = coalesce(function.function_memory, var.application_memory)
+      timeout     = coalesce(function.function_timeout, var.application_timeout)
+      concurrency = coalesce(function.function_concurrency_limit, -1)
+    }
+  }
 
   function_env_vars = merge(
     { APP_NAME = var.application_name },
@@ -72,26 +103,50 @@ moved {
 }
 
 resource "aws_lambda_function" "lambda_application" {
-  package_type = var.application_package_type
-  for_each     = var.lambda_functions_config
+  for_each = var.lambda_functions_config
 
-  s3_bucket     = local.isZipPackage ? var.artifact_bucket : null
-  s3_key        = local.isZipPackage ? coalesce(try(each.value.s3_key, null), var.artifact_bucket_key) : null
-  function_name = format("%s-%s", var.application_name, each.key)
+  package_type = local.function_config[each.key].package_type
+
+  s3_bucket     = local.function_config[each.key].is_zip ? var.artifact_bucket : null
+  s3_key        = local.function_config[each.key].is_zip ? local.function_config[each.key].s3_key : null
+  function_name = local.function_config[each.key].name
   description   = each.value.description
   role          = aws_iam_role.lambda_application_execution_role.arn
-  handler       = local.isZipPackage ? each.value.handler : null
+  handler       = local.function_config[each.key].is_zip ? each.value.handler : null
 
-  image_uri = local.isImagePackage ? "${var.container_image_uri}:${var.application_version}" : null
+  image_uri = local.function_config[each.key].is_image ? local.application_image_uri : null
 
   publish     = true
-  runtime     = local.isZipPackage ? var.application_runtime : null
-  memory_size = try(each.value.function_memory, var.application_memory)
-  timeout     = try(each.value.function_timeout, var.application_timeout)
+  runtime     = local.function_config[each.key].is_zip ? local.function_config[each.key].runtime : null
+  memory_size = local.function_config[each.key].memory
+  timeout     = local.function_config[each.key].timeout
 
-  reserved_concurrent_executions = try(each.value.function_concurrency_limit, -1)
+  reserved_concurrent_executions = local.function_config[each.key].concurrency
 
-  layers = local.isZipPackage ? local.layers : null
+  layers = local.function_config[each.key].is_zip ? local.function_config[each.key].layers : null
+
+  lifecycle {
+    precondition {
+      condition     = length(local.function_config[each.key].name) <= 64
+      error_message = "Lambda function name \"${local.function_config[each.key].name}\" is ${length(local.function_config[each.key].name)} characters and AWS allows at most 64. Shorten application_name or the \"${each.key}\" key in lambda_functions_config."
+    }
+
+    precondition {
+      condition     = !local.function_config[each.key].is_zip || local.function_config[each.key].runtime != null
+      error_message = "Function \"${each.key}\" resolves to the Zip package type but has no runtime. Set runtime on its lambda_functions_config entry, or application_runtime for the whole application."
+    }
+
+    precondition {
+      condition     = !local.function_config[each.key].is_zip || local.function_config[each.key].s3_key != null
+      error_message = "Function \"${each.key}\" resolves to the Zip package type but has no artifact key. Set s3_key on its lambda_functions_config entry, or artifact_bucket_key for the whole application."
+    }
+
+    precondition {
+      condition     = !local.function_config[each.key].is_image || local.application_image_uri != null
+      error_message = "Function \"${each.key}\" resolves to the Image package type but no image URI is configured. Set container_image_uri for the application."
+    }
+  }
+
   tracing_config {
     mode = var.tracking_config
   }
@@ -108,7 +163,7 @@ resource "aws_lambda_function" "lambda_application" {
   }
 
   dynamic "image_config" {
-    for_each = local.isImagePackage ? [true] : []
+    for_each = local.function_config[each.key].is_image ? [true] : []
     content {
       command = [each.value.handler]
     }
