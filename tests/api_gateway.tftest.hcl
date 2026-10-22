@@ -3,12 +3,12 @@ provider "aws" {
 }
 
 variables {
-  application_name                = "test-lambda-app"
-  application_runtime            = "nodejs18.x"
-  application_version            = "1.0.0"
-  artifact_bucket                = "test-artifact-bucket"
-  artifact_bucket_key            = "test-app.zip"
-  enable_api_gateway             = true
+  application_name    = "test-lambda-app"
+  application_runtime = "nodejs18.x"
+  application_version = "1.0.0"
+  artifact_bucket     = "test-artifact-bucket"
+  artifact_bucket_key = "test-app.zip"
+  enable_api_gateway  = true
 
   lambda_functions_config = {
     api = {
@@ -20,7 +20,7 @@ variables {
 
   api_gateway_route_config = {
     api = {
-      methods = ["GET", "POST"]
+      methods        = ["GET", "POST"]
       operation_name = "ApiHandler"
     }
   }
@@ -139,7 +139,7 @@ run "api_gateway_cors_configuration" {
       allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
       allow_origins     = ["*"]
       expose_headers    = []
-      max_age          = 300
+      max_age           = 300
     }
   }
 

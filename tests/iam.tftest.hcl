@@ -97,7 +97,7 @@ run "default_lambda_execution_policy" {
     error_message = "SSM access policy should have correct name"
   }
 
-assert {
+  assert {
     condition     = length(aws_iam_role_policy_attachment.lambda_insights) > 0
     error_message = "Lambda insights policy should be created by default"
   }
@@ -133,22 +133,22 @@ assert {
   }
 
   assert {
-    condition = length(aws_iam_role_policy_attachment.xray_daemon) == 0
+    condition     = length(aws_iam_role_policy_attachment.xray_daemon) == 0
     error_message = "Lambda execution policy should not include X-Ray permission by default"
   }
 
   assert {
-    condition = length(aws_iam_role_policy.ssm_kms_key) == 0
+    condition     = length(aws_iam_role_policy.ssm_kms_key) == 0
     error_message = "SSM KMS key policy should not be created by default"
   }
 
   assert {
-    condition = length(aws_iam_role_policy.event_bus_access_policy) == 0
+    condition     = length(aws_iam_role_policy.event_bus_access_policy) == 0
     error_message = "Event bus access policy should not be created by default"
   }
 
   assert {
-    condition = length(aws_iam_role_policy.invoke_lambdas) == 0
+    condition     = length(aws_iam_role_policy.invoke_lambdas) == 0
     error_message = "API Gateway invoke lambdas policy should not be created by default"
   }
 }
@@ -207,7 +207,7 @@ run "tracing_permissions_when_enabled" {
   command = plan
 
   assert {
-    condition = length(aws_iam_role_policy_attachment.xray_daemon) > 0
+    condition     = length(aws_iam_role_policy_attachment.xray_daemon) > 0
     error_message = "Lambda execution policy should include X-Ray permissions when tracing is active"
   }
 }
@@ -225,12 +225,12 @@ run "msk_permissions_when_msk_entrypoint_provided" {
   command = plan
 
   assert {
-    condition     = length(aws_iam_role_policy.msk_cluster_access) > 0 &&length(aws_iam_role_policy_attachment.msk_access_policy) > 0
+    condition     = length(aws_iam_role_policy.msk_cluster_access) > 0 && length(aws_iam_role_policy_attachment.msk_access_policy) > 0
     error_message = "MSK access policy should be created when MSK event source is configured"
   }
 }
 
-run"s3_and_ddb_permission_when_datastore_are_provisioned" {
+run "s3_and_ddb_permission_when_datastore_are_provisioned" {
   variables {
     enable_datastore      = true
     create_s3_bucket      = true
@@ -262,7 +262,7 @@ run "ssm_kms_key_policy_for_customer_provided_ssm_kms_key" {
   command = plan
 
   assert {
-    condition = length(aws_iam_role_policy.ssm_kms_key) == 1
+    condition     = length(aws_iam_role_policy.ssm_kms_key) == 1
     error_message = "SSM KMS key policy should be created when a customer-provided KMS key is used"
   }
 }
@@ -275,7 +275,7 @@ run "invoke_lambda_policy_is_created_when_api_gateway_is_enabled" {
   command = plan
 
   assert {
-    condition = length(aws_iam_role_policy.invoke_lambdas) == 1
+    condition     = length(aws_iam_role_policy.invoke_lambdas) == 1
     error_message = "Invoke Lambda policy should be created when API Gateway is enabled"
   }
 }

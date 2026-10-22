@@ -168,12 +168,12 @@ variable "cors_config" {
   })
   description = "CORS configuration for the ALB, used to set up OPTIONS response"
   default = {
-    enabled           = false
-    allow_origins     = ""
-    allow_methods     = ""
-    allow_headers     = ""
-    expose_headers    = ""
-    max_age           = 0
+    enabled        = false
+    allow_origins  = ""
+    allow_methods  = ""
+    allow_headers  = ""
+    expose_headers = ""
+    max_age        = 0
   }
 }
 

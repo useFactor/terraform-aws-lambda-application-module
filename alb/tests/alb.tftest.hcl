@@ -21,8 +21,8 @@ variables {
     allow_credentials = false
   }
 
-  enable_access_logs  = false
-  enable_connection_logs = false
+  enable_access_logs       = false
+  enable_connection_logs   = false
   enable_health_check_logs = false
 }
 
@@ -142,8 +142,8 @@ run "verify_access_logs_enabled" {
   command = plan
 
   variables {
-    enable_access_logs      = true
-    access_logs_bucket_name = "test-access-logs-bucket"
+    enable_access_logs        = true
+    access_logs_bucket_name   = "test-access-logs-bucket"
     access_logs_bucket_prefix = "alb-logs"
   }
 
@@ -157,8 +157,8 @@ run "verify_access_logs_bucket_configuration" {
   command = plan
 
   variables {
-    enable_access_logs      = true
-    access_logs_bucket_name = "test-access-logs-bucket"
+    enable_access_logs        = true
+    access_logs_bucket_name   = "test-access-logs-bucket"
     access_logs_bucket_prefix = "alb-logs"
   }
 
@@ -172,9 +172,9 @@ run "verify_access_logs_prefix" {
   command = plan
 
   variables {
-    enable_access_logs         = true
-    access_logs_bucket_name    = "test-access-logs-bucket"
-    access_logs_bucket_prefix  = "alb-logs"
+    enable_access_logs        = true
+    access_logs_bucket_name   = "test-access-logs-bucket"
+    access_logs_bucket_prefix = "alb-logs"
   }
 
   assert {
@@ -222,9 +222,9 @@ run "verify_health_check_logs_enabled" {
   command = plan
 
   variables {
-    enable_health_check_logs         = true
+    enable_health_check_logs           = true
     health_check_logs_logs_bucket_name = "test-hc-logs-bucket"
-    health_check_logs_prefix         = "health-check-logs"
+    health_check_logs_prefix           = "health-check-logs"
   }
 
   assert {
@@ -412,7 +412,7 @@ run "verify_routing_headers_can_be_customized" {
   command = plan
 
   variables {
-    routing_http_request_x_amzn_tls_version_header_name = "X-Custom-TLS-Version"
+    routing_http_request_x_amzn_tls_version_header_name      = "X-Custom-TLS-Version"
     routing_http_request_x_amzn_tls_cipher_suite_header_name = "X-Custom-Cipher-Suite"
   }
 
@@ -431,8 +431,8 @@ run "verify_security_headers_can_be_set" {
 
   variables {
     routing_http_response_strict_transport_security_header_value = "max-age=31536000; includeSubDomains"
-    routing_http_response_x_content_type_options_header_value = "nosniff"
-    routing_http_response_x_frame_options_header_value = "DENY"
+    routing_http_response_x_content_type_options_header_value    = "nosniff"
+    routing_http_response_x_frame_options_header_value           = "DENY"
   }
 
   assert {
@@ -451,8 +451,8 @@ run "verify_mtls_headers_can_be_customized" {
 
   variables {
     routing_http_request_x_amzn_mtls_clientcert_serial_number_header_name = "X-Custom-Cert-Serial"
-    routing_http_request_x_amzn_mtls_clientcert_issuer_header_name = "X-Custom-Cert-Issuer"
-    routing_http_request_x_amzn_mtls_clientcert_subject_header_name = "X-Custom-Cert-Subject"
+    routing_http_request_x_amzn_mtls_clientcert_issuer_header_name        = "X-Custom-Cert-Issuer"
+    routing_http_request_x_amzn_mtls_clientcert_subject_header_name       = "X-Custom-Cert-Subject"
   }
 
   assert {

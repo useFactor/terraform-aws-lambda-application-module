@@ -34,14 +34,14 @@ resource "aws_lb_listener" "alb_lambda_listener" {
   routing_http_request_x_amzn_tls_version_header_name                   = var.routing_http_request_x_amzn_tls_version_header_name
   routing_http_request_x_amzn_tls_cipher_suite_header_name              = var.routing_http_request_x_amzn_tls_cipher_suite_header_name
 
-  routing_http_response_access_control_allow_origin_header_value      = var.cors_config.enabled ? var.cors_config.allow_origins : ""
-  routing_http_response_access_control_allow_methods_header_value     = var.cors_config.enabled ? var.cors_config.allow_methods : ""
-  routing_http_response_access_control_allow_headers_header_value     = var.cors_config.enabled ? var.cors_config.allow_headers : ""
-  routing_http_response_access_control_expose_headers_header_value    = var.cors_config.enabled ? var.cors_config.expose_headers : ""
+  routing_http_response_access_control_allow_origin_header_value   = var.cors_config.enabled ? var.cors_config.allow_origins : ""
+  routing_http_response_access_control_allow_methods_header_value  = var.cors_config.enabled ? var.cors_config.allow_methods : ""
+  routing_http_response_access_control_allow_headers_header_value  = var.cors_config.enabled ? var.cors_config.allow_headers : ""
+  routing_http_response_access_control_expose_headers_header_value = var.cors_config.enabled ? var.cors_config.expose_headers : ""
   routing_http_response_access_control_allow_credentials_header_value = (var.cors_config.enabled &&
-                                                                          var.cors_config.allow_origins != "*" &&
-                                                                          var.cors_config.allow_credentials) ? true : null
-  routing_http_response_access_control_max_age_header_value           = var.cors_config.enabled ? var.cors_config.max_age : ""
+    var.cors_config.allow_origins != "*" &&
+  var.cors_config.allow_credentials) ? true : null
+  routing_http_response_access_control_max_age_header_value = var.cors_config.enabled ? var.cors_config.max_age : ""
 }
 
 resource "aws_lb_listener_rule" "cors_rule" {

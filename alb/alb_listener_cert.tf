@@ -54,7 +54,7 @@ resource "aws_route53_record" "alb_route53_A_record" {
 }
 
 resource "aws_route53_record" "alb_route53_AAAA_record" {
-  count = local.AAAA_record_count
+  count   = local.AAAA_record_count
   zone_id = var.zone_id
   name    = var.domain_name
   type    = "AAAA"

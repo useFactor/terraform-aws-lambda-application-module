@@ -112,11 +112,11 @@ run "lambda_function_container_image_package_type" {
         description = "API handler function"
       }
       worker = {
-        handler           = "worker/index.handler"
-        enable_vpc        = true
-        description       = "Background worker function"
-        function_memory   = 512
-        function_timeout  = 60
+        handler          = "worker/index.handler"
+        enable_vpc       = true
+        description      = "Background worker function"
+        function_memory  = 512
+        function_timeout = 60
       }
     }
   }
@@ -134,22 +134,22 @@ run "lambda_function_container_image_package_type" {
   }
 
   assert {
-    condition = aws_lambda_function.lambda_application["api"].image_uri == "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda-image:1.0.0"
+    condition     = aws_lambda_function.lambda_application["api"].image_uri == "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda-image:1.0.0"
     error_message = "API function should have correct image URI with tag set by application_version"
   }
 
   assert {
-    condition = aws_lambda_function.lambda_application["worker"].image_uri == "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda-image:1.0.0"
+    condition     = aws_lambda_function.lambda_application["worker"].image_uri == "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda-image:1.0.0"
     error_message = "Worker function should have correct image URI with tag set by application_version"
   }
 
   assert {
-    condition = aws_lambda_function.lambda_application["api"].image_config[0].command[0] == "api/index.handler"
+    condition     = aws_lambda_function.lambda_application["api"].image_config[0].command[0] == "api/index.handler"
     error_message = "API function should have correct image command from handler"
   }
 
   assert {
-    condition = aws_lambda_function.lambda_application["worker"].image_config[0].command[0] == "worker/index.handler"
+    condition     = aws_lambda_function.lambda_application["worker"].image_config[0].command[0] == "worker/index.handler"
     error_message = "Worker function should have correct image command from handler"
   }
 }
@@ -177,10 +177,10 @@ run "lambda_function_memory_and_timeout_and_s3_key" {
     error_message = "Worker function should use custom timeout"
   }
 
-assert {
-  condition     = aws_lambda_function.lambda_application["api"].s3_key == "test-app.zip"
-  error_message = "API function should use default S3 key"
-}
+  assert {
+    condition     = aws_lambda_function.lambda_application["api"].s3_key == "test-app.zip"
+    error_message = "API function should use default S3 key"
+  }
   assert {
     condition     = aws_lambda_function.lambda_application["worker"].s3_key == "worker.zip"
     error_message = "Worker function should use custom S3 key"
@@ -237,7 +237,7 @@ run "lambda_function_vpc_configuration" {
 
 run "lambda_function_snap_start" {
 
-command = plan
+  command = plan
 
   assert {
     condition     = length(aws_lambda_function.lambda_application["api"].snap_start) == 0
