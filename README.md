@@ -58,7 +58,7 @@ The suite under [tests/](tests) runs offline against `terraform plan` and create
 
 | Name | Source | Version |
 |------|--------|---------|
-| lambda_datastore | github.com/useFactor/terraform-aws-data-storage-module | v4.4.1 |
+| lambda_datastore | github.com/useFactor/terraform-aws-data-storage-module | v4.5.0 |
 
 ## Inputs
 

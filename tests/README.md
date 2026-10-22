@@ -29,7 +29,7 @@ These cover the standalone submodules and are run from their own directories:
 ## Running Tests
 
 ### Prerequisites
-- Terraform >= 1.7.0 (`override_data` is a 1.7 feature)
+- Terraform >= 1.7.0 (`override_data` is a 1.7 feature). `mise install` installs the Terraform and terraform-docs versions pinned in [`.tool-versions`](../.tool-versions)
 - Network access for `terraform init` to fetch the AWS provider and the datastore module
 
 The suite runs entirely offline. Every `run` block uses `command = plan`, and the provider is configured with dummy keys so that planning never contacts AWS (see [Common Test Structure](#common-test-structure)).

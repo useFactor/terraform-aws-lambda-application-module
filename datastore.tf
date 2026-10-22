@@ -1,5 +1,5 @@
 module "lambda_datastore" {
-  source = "github.com/useFactor/terraform-aws-data-storage-module?ref=v4.4.1"
+  source = "github.com/useFactor/terraform-aws-data-storage-module?ref=v4.5.0"
 
   enable_datastore  = var.enable_datastore
   iam_resource_path = var.iam_resource_path
