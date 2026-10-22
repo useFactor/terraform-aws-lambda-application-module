@@ -5,7 +5,7 @@ module "example_lambda_applcation" {
   }
 
   application_name    = "service-env-example-com"
-  application_runtime = "python3.8"
+  application_runtime = "python3.12"
   application_version = "0.0.1"
   artifact_bucket     = "labda-app.env.example.com"
   artifact_bucket_key = "0.0.1/app.zip"
@@ -32,11 +32,13 @@ module "example_lambda_applcation" {
   }
 
   internal_entrypoint_config = {
-    int-function = {
-      name               = "int-function-rule"
-      description        = "internal endpoint function Rule description"
-      event_pattern_json = { "source" : ["internal_endpoint_event.created"] }
-    }
+    int-function = [
+      {
+        name               = "int-function-rule"
+        description        = "internal endpoint function Rule description"
+        event_pattern_json = jsonencode({ source = ["internal_endpoint_event.created"] })
+      }
+    ]
   }
 
   enable_api_gateway = true

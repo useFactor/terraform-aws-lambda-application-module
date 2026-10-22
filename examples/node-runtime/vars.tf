@@ -415,14 +415,17 @@ variable "tracking_config" {
   description = "Sets the passing of sample and tracing of calls, possible values are `Passthrough`(default) or `Active`"
 }
 
-variable "service_target_group_name" {
+variable "alb_ingress_listener_arn" {
   type        = string
-  description = "The service target group attached to application load balancer listener"
-  default     = null
+  description = "Listener ARN of the application load balancer that fronts the functions"
+  default     = ""
 }
 
-variable "service_target_group_path" {
-  type        = string
-  description = "The target path attached to the service target group"
-  default     = null
+variable "alb_ingress_config" {
+  type = map(object({
+    target_group_name = string
+    target_group_path = string
+  }))
+  description = "Target group name and path for each lambda function reachable through the load balancer, keyed by function name"
+  default     = {}
 }

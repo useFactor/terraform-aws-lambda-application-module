@@ -36,8 +36,8 @@ module "example_lambda_applcation" {
   parameter_store_path                  = var.parameter_store_path
   api_gateway_custom_domain_name        = var.api_gateway_custom_domain_name
   enable_api_gateway                    = var.enable_api_gateway
-  service_target_group_name             = var.service_target_group_name
-  service_target_group_path             = var.service_target_group_path
+  alb_ingress_listener_arn              = var.alb_ingress_listener_arn
+  alb_ingress_config                    = var.alb_ingress_config
   tracking_config                       = var.tracking_config
   msk_arn                               = var.msk_arn
   msk_event_source_config               = var.msk_event_source_config
