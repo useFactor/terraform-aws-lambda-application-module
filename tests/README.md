@@ -21,14 +21,19 @@ The test suite is organized by module components:
 - **[cloudwatch.tftest.hcl](cloudwatch.tftest.hcl)** - CloudWatch log groups for Lambda functions
 
 ### Independent Module Component Tests
-- **[artifactory/tests/artifactory.tftest.hcl](../artifactory/tests/artifactory.tftest.hcl)** - S3 artifactory bucket configuration (existing)
+These cover the standalone submodules and are run from their own directories:
+- **[alb/tests/alb.tftest.hcl](../alb/tests/alb.tftest.hcl)** - Application Load Balancer, HTTPS listener, CORS, logging, and security configuration
+- **[artifactory/tests/artifactory.tftest.hcl](../artifactory/tests/artifactory.tftest.hcl)** - S3 artifactory bucket configuration
 
 ## Running Tests
 
 ### Prerequisites
-- Terraform >= 1.6.0 (required for native testing)
-- AWS credentials configured
-- Required AWS permissions for creating test resources
+- Terraform >= 1.7.0 (`override_data` is a 1.7 feature)
+- Network access for `terraform init` to fetch the AWS provider and the datastore module
+
+The suite runs entirely offline. Every `run` block uses `command = plan`, and the provider is configured with dummy keys so that planning never contacts AWS (see [Common Test Structure](#common-test-structure)).
+
+Data sources that call the AWS API are given `override_data`: the two managed-policy lookups in every root test file, and `data.aws_cloudwatch_event_bus.external` in the one run block that configures external buses. Prefer this over `mock_provider` when adding tests. The `aws_iam_policy_document` data sources are computed by the provider locally, so the IAM assertions check real policy JSON; mocking the whole provider replaces that JSON with a value the provider rejects at `aws_iam_role.assume_role_policy`.
 
 ### Individual Test Files
 Run a specific test file:
@@ -64,6 +69,12 @@ Run the complete test suite:
 terraform test
 ```
 
+The `alb` and `artifactory` submodules have their own suites, run from their own directories after their own `terraform init`:
+```bash
+(cd alb && terraform init -backend=false && terraform test)
+(cd artifactory && terraform init -backend=false && terraform test)
+```
+
 ### Test with Specific Variables
 Pass variables to tests:
 ```bash
@@ -75,10 +86,30 @@ terraform test -filter=tests/main.tftest.hcl -var="application_name=my-test-app"
 ## Test Patterns
 
 ### Common Test Structure
-Each test file follows this pattern:
+Each root test file follows this pattern; the `alb` and `artifactory` suites need only the provider block:
 ```hcl
 provider "aws" {
-  region = "us-west-2"
+  region                      = "us-west-2"
+  access_key                  = "mock_access_key"
+  secret_key                  = "mock_secret_key"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+}
+
+override_data {
+  target = data.aws_iam_policy.xray_daemon_write_access
+  values = {
+    arn = "arn:aws:iam::aws:policy/service-role/AWSXRayDaemonWriteAccess"
+  }
+}
+
+override_data {
+  target = data.aws_iam_policy.lambda_insights
+  values = {
+    arn = "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy"
+  }
 }
 
 variables {
@@ -89,7 +120,7 @@ variables {
 }
 
 run "test_name" {
-  command = plan  # or apply
+  command = plan
 
   variables {
     # Test-specific variable overrides
@@ -180,6 +211,7 @@ run "test_name" {
 - ✅ Event patterns and schedules
 - ✅ Lambda permissions and targets
 - ✅ Configuration flattening logic
+- ✅ External bus environment variables and PutEvents policy (`main.tftest.hcl`)
 
 ### ACM Components
 - ✅ Certificate creation based on custom domain
@@ -208,37 +240,14 @@ run "test_name" {
 4. **Validate Dependencies**: Test cross-component integrations
 
 ### Performance Considerations
-1. **Use `plan` Command**: Most tests use `terraform plan` to avoid creating real resources
-2. **Use `apply` Sparingly**: Only use `terraform apply` when testing runtime behavior
-3. **Parallel Execution**: Terraform tests can run in parallel when properly isolated
-
-## Continuous Integration
-
-### GitHub Actions Example
-```yaml
-name: Terraform Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.6.0"
-      - name: Run Terraform Tests
-        run: terraform test
-        env:
-          AWS_DEFAULT_REGION: us-west-2
-```
+1. **Use `plan` Command**: Every test uses `terraform plan`
+2. **Parallel Execution**: Terraform tests can run in parallel when properly isolated
 
 ## Troubleshooting
 
 ### Common Issues
-1. **Provider Not Found**: Ensure AWS provider is properly configured
-2. **Permission Errors**: Verify AWS credentials and permissions
-3. **Resource Conflicts**: Use unique names across tests
-4. **State Issues**: Tests use temporary state; clean up with `terraform test -cleanup`
+1. **Provider Not Found**: Run `terraform init` in the directory you are testing from
+2. **Credential or region errors**: A data source new to the plan is reaching AWS. Give it an `override_data` block rather than supplying credentials
 
 ### Debugging Tests
 - Use `terraform test -verbose` for detailed output
@@ -248,4 +257,3 @@ jobs:
 - Check for common issues:
   - **Set vs List indexing**: Use `contains()` for sets, not `[0]` indexing
   - **Resource conditionals**: Check that resources exist before accessing attributes
-  - **Data source dependencies**: Ensure external resources exist before testing

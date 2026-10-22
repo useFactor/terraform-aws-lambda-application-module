@@ -1,5 +1,25 @@
 provider "aws" {
-  region = "us-west-2"
+  region                      = "us-west-2"
+  access_key                  = "mock_access_key"
+  secret_key                  = "mock_secret_key"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+}
+
+override_data {
+  target = data.aws_iam_policy.xray_daemon_write_access
+  values = {
+    arn = "arn:aws:iam::aws:policy/service-role/AWSXRayDaemonWriteAccess"
+  }
+}
+
+override_data {
+  target = data.aws_iam_policy.lambda_insights
+  values = {
+    arn = "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy"
+  }
 }
 
 variables {
@@ -402,27 +422,49 @@ run "custom_application_environment_variables" {
   }
 }
 
-# TODO add override?? so module can find buses so test can run
-# run "external_event_bus_configuration" {
-#   variables {
-#     event_bus_config = {
-#       org_event_bus_name    = "org-event-bus"
-#       domain_event_bus_name = "domain-event-bus"
-#     }
-#   }
+run "external_event_bus_configuration" {
+  variables {
+    event_bus_config = {
+      org_event_bus_name    = "org-event-bus"
+      domain_event_bus_name = "domain-event-bus"
+    }
+  }
 
-#   command = plan
+  # Looking up an external bus is an AWS API call, so the module is given the ARNs it would have resolved.
+  override_data {
+    target = data.aws_cloudwatch_event_bus.external["org_event_bus_name"]
+    values = {
+      arn = "arn:aws:events:us-west-2:123456789012:event-bus/org-event-bus"
+    }
+  }
 
-#   assert {
-#     condition     = aws_lambda_function.lambda_application["api"].environment[0].variables["ORG_EVENT_BUS"] == "org-event-bus"
-#     error_message = "ORG_EVENT_BUS environment variable should be set"
-#   }
+  override_data {
+    target = data.aws_cloudwatch_event_bus.external["domain_event_bus_name"]
+    values = {
+      arn = "arn:aws:events:us-west-2:123456789012:event-bus/domain-event-bus"
+    }
+  }
 
-#   assert {
-#     condition     = aws_lambda_function.lambda_application["api"].environment[0].variables["DOMAIN_EVENT_BUS"] == "domain-event-bus"
-#     error_message = "DOMAIN_EVENT_BUS environment variable should be set"
-#   }
-# }
+  command = plan
+
+  assert {
+    condition     = aws_lambda_function.lambda_application["api"].environment[0].variables["ORG_EVENT_BUS"] == "org-event-bus"
+    error_message = "ORG_EVENT_BUS environment variable should be set"
+  }
+
+  assert {
+    condition     = aws_lambda_function.lambda_application["api"].environment[0].variables["DOMAIN_EVENT_BUS"] == "domain-event-bus"
+    error_message = "DOMAIN_EVENT_BUS environment variable should be set"
+  }
+
+  assert {
+    condition = toset(flatten(jsondecode(aws_iam_role_policy.event_bus_access_policy[0].policy).Statement[*].Resource)) == toset([
+      "arn:aws:events:us-west-2:123456789012:event-bus/org-event-bus",
+      "arn:aws:events:us-west-2:123456789012:event-bus/domain-event-bus",
+    ])
+    error_message = "External event bus policy should grant PutEvents on both configured buses and nothing else"
+  }
+}
 
 run "datastore_disabled_by_default" {
   command = plan
