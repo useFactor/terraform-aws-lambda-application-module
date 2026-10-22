@@ -53,7 +53,7 @@ Implementation teams consume this module in a root module:
 
 ```hcl
 module "alb" {
-  source = "git::https://github.com/hyprnz/terraform-aws-lambda-application-module//alb?ref=v1.0.0"
+  source = "git::https://github.com/useFactor/terraform-aws-lambda-application-module//alb?ref=v1.0.0"
 
   application_loadbalancer_name = "my-app-alb"
   vpc_id                        = "vpc-12345678"

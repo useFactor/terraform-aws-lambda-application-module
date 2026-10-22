@@ -8,6 +8,7 @@ The test suite is organized by module components:
 
 ### Core Tests
 - **[main.tftest.hcl](main.tftest.hcl)** - Core Lambda application functionality, service catalog registration, environment variables, layers, and tracing
+- **[function_config.tftest.hcl](function_config.tftest.hcl)** - Per-function resolution of package type, runtime, layers, memory and timeout, and the preconditions that reject invalid combinations
 - **[iam.tftest.hcl](iam.tftest.hcl)** - IAM roles, policies, and permissions for Lambda execution, VPC, tracing, and datastore access
 
 ### Integration Tests
@@ -40,6 +41,9 @@ Run a specific test file:
 ```bash
 # Core functionality tests
 terraform test -filter=tests/main.tftest.hcl
+
+# Per-function configuration tests
+terraform test -filter=tests/function_config.tftest.hcl
 
 # API Gateway integration tests
 terraform test -filter=tests/api_gateway.tftest.hcl
@@ -164,6 +168,12 @@ run "test_name" {
 - ✅ Layer configuration and attachment
 - ✅ VPC configuration
 - ✅ Tracing configuration
+
+### Per-Function Configuration
+- ✅ Application-wide values inherited by functions that declare no override
+- ✅ Per-function runtime, layers, memory and timeout overrides
+- ✅ Zip and Image package types, including a Zip function inside an Image application
+- ✅ Preconditions on missing runtime, missing artifact key, missing image URI, over-long function names and unrecognised package types
 
 ### IAM Components
 - ✅ Execution role creation and assume role policy

@@ -28,9 +28,16 @@ The module includes:
 - Path-based routing for Lambda targets
 - Comprehensive logging (access, connection, and health check logs)
 - Security configurations (security headers, WAF integration, mTLS support)
-- 18 comprehensive plan-based tests for validation
 
 See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more information.
+
+## Usage
+
+See [examples/default](examples/default) and [examples/node-runtime](examples/node-runtime) for complete, validated configurations.
+
+## Testing
+
+The suite under [tests/](tests) runs offline against `terraform plan` and creates no infrastructure. See [tests/README.md](tests/README.md).
 
 ---
 <!-- BEGIN_TF_DOCS -->
@@ -38,7 +45,7 @@ See the [README](alb/README.md) and [AGENTS.md](alb/AGENTS.md) for more informat
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.3.0 |
+| terraform | >= 1.7.0 |
 | aws | >= 6.0.0, <7.0.0 |
 
 ## Providers

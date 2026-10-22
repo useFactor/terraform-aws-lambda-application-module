@@ -38,7 +38,7 @@ Implementation teams consume this module in a root module:
 
 ```hcl
 module "artifactory" {
-  source = "git::https://github.com/hyprnz/terraform-aws-lambda-application-module//artifactory?ref=v1.0.0"
+  source = "git::https://github.com/useFactor/terraform-aws-lambda-application-module//artifactory?ref=v1.0.0"
 
   application_name          = "my-app"
   artifactory_bucket_name   = "my-app-artifacts"

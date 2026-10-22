@@ -19,7 +19,7 @@ A custom domain name and Route 53 hosted zone are required to use this module, a
 
 ```hcl
 module "alb" {
-  source = "git::https://github.com/hyprnz/terraform-aws-lambda-application-module//alb?ref=<some-tag>"
+  source = "git::https://github.com/useFactor/terraform-aws-lambda-application-module//alb?ref=<some-tag>"
 
   application_loadbalancer_name = "my-app-alb"
   vpc_id                        = "vpc-12345678"
@@ -47,14 +47,14 @@ module "alb" {
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.3.0 |
-| aws | >= 6.0.0, <7.0.0 |
+| terraform | >= 1.7.0 |
+| aws | ~> 6.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| aws | >= 6.0.0, <7.0.0 |
+| aws | ~> 6.0 |
 
 ## Modules
 
